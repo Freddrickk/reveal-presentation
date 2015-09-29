@@ -173,12 +173,12 @@
             </script>
         </section>
 
-				<section>
-          <h1>Reverse 300</h1>
-					<h2>FTP</h2>
-				</section>
+        <section>
+            <h1>Reverse 300</h1>
+            <h2>FTP</h2>
+        </section>
 
-				<section data-markdown>
+        <section data-markdown>
             <script type="text/template">
             ## À quoi on a affaire
             ```
@@ -405,12 +405,178 @@ conn.interactive()
             ```
             </script>
         </section>
-				<section>
-          <h1>Exploit 100</h1>
-					<h2>Precision</h2>
-				</section>
 
-				<section data-markdown>
+		<section>
+            <h1>Exploit 250</h1>
+            <h2>Contacts</h2>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## À quoi on a affaire
+            ```
+            $ file ./contacts
+            contacts: ELF 32-bit LSB executable...dynamically linked...stripped
+            ```
+
+            ```
+            $ ./contacts 
+            Menu:
+            1)Create contact
+            2)Remove contact
+            3)Edit contact
+            4)Display contacts
+            5)Exit
+            >>> 
+            ```
+
+            * Binaire GNU/Linux 32-bits
+            * Gestionnaire de contact
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Mécanismes de protection
+
+            ```
+            $ readelf --program-headers ./contacts | grep GNU_STACK
+            GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0x10
+            ```
+            * La stack n'est pas exécutable
+            * ASLR (Address Space Layout Randomization) est activé
+            * Les choses se corsent ...
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Recherche de la faille
+
+            * Essayer de faire planter le programme avec des entrées trop longues
+            * Tester pour format string (%x.%x.%x)
+            ```
+            Contacts:
+                Name: %x.%x.%x
+                Length 20
+                Phone #: %x.%x.%x
+                Description: 86d9008.f759c401.f76f3000
+            ```
+
+            * On a affaire à un format string attack
+            * Nooonnnnn !!!!!
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Format String Attack
+
+            * printf("%d %d\n", e1, e1);
+            * Et si on écrit : printf("%d %d") ?
+            * printf("aaa %n");
+            * Il y a faille si l'utilisateur contrôle le format
+            * Fonctions vulnérables : printf, fprintf, snprintf, etc.
+            * Toutes les fonctions qui prennent un format string en paramètre sont vulnérables
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Scénario d'attaque
+            
+            * On veut appeller system("/bin/sh");
+            * Il faut trouver une fonction à remplacer par system
+            * Il va falloir écraser la fonction dans la GOT
+            * Il va falloir lui passer "/bin/sh" en paramètre
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Global Offset Table (GOT)
+    
+            * Tableau de pointeurs vers des fonctions de bibliothèques externes
+            * Populé par le loader lors du premier appel de la fonction (lazy)
+
+            ```
+            Relocation section '.rel.plt' at offset 0x43c contains 14 entries:
+             Offset     Info    Type            Sym.Value  Sym. Name
+            0804b00c  00000107 R_386_JUMP_SLOT   00000000   strcmp
+            0804b010  00000207 R_386_JUMP_SLOT   00000000   printf
+            0804b014  00000307 R_386_JUMP_SLOT   00000000   free
+            0804b018  00000407 R_386_JUMP_SLOT   00000000   fgets
+            0804b01c  00000507 R_386_JUMP_SLOT   00000000   __stack_chk_fail
+            0804b020  00000607 R_386_JUMP_SLOT   00000000   malloc
+            0804b024  00000707 R_386_JUMP_SLOT   00000000   puts
+            0804b028  00000807 R_386_JUMP_SLOT   00000000   __gmon_start__
+            0804b02c  00000907 R_386_JUMP_SLOT   00000000   exit
+            0804b030  00000a07 R_386_JUMP_SLOT   00000000   strchr
+            0804b034  00000b07 R_386_JUMP_SLOT   00000000   __libc_start_main
+            0804b038  00000c07 R_386_JUMP_SLOT   00000000   setvbuf
+            0804b03c  00000d07 R_386_JUMP_SLOT   00000000   memset
+            0804b040  00000e07 R_386_JUMP_SLOT   00000000   __isoc99_scanf
+            ```
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Format string
+    
+            * "memset" est appelé avec notre input quand on efface un contact
+            * On peut seulement écrire 2 bytes à la fois dans l'adresse de memcpy
+            * C'est bien beau, mais c'est quoi l'adresse de system ?
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Libc
+    
+            * System est à un offset différent d'une libc à l'autre
+            * Quelle version exacte de la libc tourne sur le serveur ?
+            * Offset de system dans la libc en question
+            * Leaker une adresse de libc sur la stack et trouver l'offset de system par rapport à cette adresse
+            * On est finalement prêt à écrire notre exploit...
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Format string
+
+            * Il nous faut 4 format string :
+                * écrire ptr_GOT
+                * écrire 2 bytes dans memcpy
+                * écrire ptr_GOT + 2
+                * écrire 2 bytes dans memcpy
+
+
+``` bash
+#######################+-----------+
+ +-------------------> |   memcpy  |
+ |  +-----------+      +-----------+
+ +- | ptr_GOT   |<-+
+    +-----------+  |
+    | ......... |  |
+    +-----------+  |
+    | ptr_stack | -+
+    +-----------+
+    | printf    |
+    +-----------+ 
+```
+            </script>
+        </section>
+
+        <section data-markdown>
             <script type="text/template">
 
             </script>
