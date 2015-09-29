@@ -475,7 +475,7 @@ conn.interactive()
             <script type="text/template">
             ## Format String Attack
 
-            * printf("%d %d\n", e1, e1);
+            * printf("%d %d\n", e1, e2);
             * Et si on écrit : printf("%d %d") ?
             * printf("aaa %n");
             * Il y a faille si l'utilisateur contrôle le format
@@ -551,7 +551,7 @@ conn.interactive()
 
         <section data-markdown>
             <script type="text/template">
-            ## Format string
+            ## Exploit
 
             * Il nous faut 4 format string :
                 * écrire ptr_GOT
@@ -560,22 +560,84 @@ conn.interactive()
                 * écrire 2 bytes dans memcpy
 
 
-``` bash
-#######################+-----------+
- +-------------------> |   memcpy  |
- |  +-----------+      +-----------+
- +- | ptr_GOT   |<-+
-    +-----------+  |
-    | ......... |  |
-    +-----------+  |
-    | ptr_stack | -+
-    +-----------+
-    | printf    |
-    +-----------+ 
-```
+            ``` bash
+            #######################+-----------+
+             +-------------------> |   memcpy  |
+             |  +-----------+      +-----------+
+             +- | ptr_GOT   |<-+
+                +-----------+  |
+                | ......... |  |
+                +-----------+  |
+                | ptr_stack | -+
+                +-----------+
+                | printf    |
+                +-----------+ 
+            ```
+
             </script>
         </section>
 
+		<section>
+            <h1>Exploit 300</h1>
+            <h2>FTP</h2>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## FTP
+            
+            * C'est le même programme, mais maintenant il faut uploader flag.txt
+            * Il faut outrepasser le filtre du "f" dans le path du fichier
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Recherche de la faille
+            
+            * Essayer toutes les commandes avec un input très très long (python -c "print 'A'*100000")
+            * Le programme ne crash pas...
+            * La commande STOR nous permet d'uploader un fichier
+            * Oh ! Ça crash !
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Analyse du crash
+            
+            * Le programme a essayé d'écrire 0x0 à une adresse invalide
+``` asm
+0x401ee0:   mov    BYTE PTR [rax+0x604200],0x0
+```
+            * rax = len(data)
+            * On peut écrire 0 à n'importe quelle adresse > 0x604200
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Exploitation de la faille
+            
+            * Et si remplaçait le filtre 'f' par 0x0
+            * rax = len(data)
+            * On peut écrire 0 à n'importe quelle adresse > 0x604200
+
+```
+mov    rax,QWORD PTR [rbp-0x30]
+movzx  eax,BYTE PTR [rax]
+movsx  edx,al
+mov    eax,DWORD PTR [rip+0x202297]        # 0x604408
+cmp    edx,eax
+```
+
+            * 0x604408 > 0x604200 : On peut remplacer le "f" par 0x0 !
+            * Il faut envoyer 520 bytes de données
+            </script>
+        </section>
         <section data-markdown>
             <script type="text/template">
 
