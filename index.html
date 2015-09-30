@@ -261,7 +261,7 @@
             print password
             ```
             * Aucun résultats...
-            * Backtracking (à 4h a.m. ...)
+            * Backtracking
             </script>
         </section>
 
@@ -384,7 +384,7 @@
             ## Exploit
 
 
-            ```
+``` python
 from pwn import *
 
 CANARY = '\xA5\x31\x5a\x47\x55\x15\x50\x40'
@@ -621,32 +621,93 @@ conn.interactive()
         <section data-markdown>
             <script type="text/template">
             ## Exploitation de la faille
-            
             * Et si remplaçait le filtre 'f' par 0x0
-            * rax = len(data)
-            * On peut écrire 0 à n'importe quelle adresse > 0x604200
 
-```
-mov    rax,QWORD PTR [rbp-0x30]
-movzx  eax,BYTE PTR [rax]
-movsx  edx,al
-mov    eax,DWORD PTR [rip+0x202297]        # 0x604408
-cmp    edx,eax
-```
-
+            ```
+            mov    rax,QWORD PTR [rbp-0x30]
+            movzx  eax,BYTE PTR [rax]
+            movsx  edx,al
+            mov    eax,DWORD PTR [rip+0x202297]        # 0x604408
+            cmp    edx,eax
+            ```
             * 0x604408 > 0x604200 : On peut remplacer le "f" par 0x0 !
             * Il faut envoyer 520 bytes de données
             </script>
         </section>
+
+
+		<section>
+            <h1>Reverse 500</h1>
+            <h2>Wyvern</h2>
+        </section>
+
         <section data-markdown>
             <script type="text/template">
+            ## À quoi on a affaire
+
+            
+            * Binaire 64-bits pour Linux
+            * Obfuscator-LLVM clang version 3.6.1
+            * C++
+
+``` bash
+$ ./wyvern 
++-----------------------+
+|    Welcome Hero       |
++-----------------------+
+
+[!] Quest: there is a dragon prowling the domain.
+    brute strength and magic is our only hope. Test your skill.
+
+Enter the dragon's secret: 
+AAAAAAAAAAAAAA
+
+[-] You have failed. The dragon's power, 
+speed and intelligence was greater.
+```
+            * Il faut trouver le secret du dragon
 
             </script>
         </section>
-      
-			</div>
 
-		</div>
+        <section data-markdown>
+            <script type="text/template">
+            ## Deobfusquer le binaire
+            
+
+
+            </script>
+        </section>
+
+        <section data-markdown>
+            <script type="text/template">
+            ## Foutre la raclée au dragon
+```            
+$ ./wyvern 
++-----------------------+
+|    Welcome Hero       |
++-----------------------+
+
+[!] Quest: there is a dragon prowling the domain.
+    brute strength and magic is our only hope. Test your skill.
+
+Enter the dragon's secret: dr4g0n_or_p4tric1an_it5_LLVM
+success
+
+[+] A great success! Here is a flag{dr4g0n_or_p4tric1an_it5_LLVM}
+```
+
+
+
+            </script>
+        </section>
+        <section>
+            <h1>Fin/Bénélux</h1>
+        </section>
+      
+    </div>
+
+    </div>
   <pre><code>
   </code></pre>
 
