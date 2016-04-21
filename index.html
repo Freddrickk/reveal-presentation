@@ -103,16 +103,15 @@
                 * 39 mnémoniques
                 * Seulement 4 instructions d'écriture en mémoire
                 ```nasm
-                 LDA     0,i
-                 LDBYTEA in,d        
-                 CPA     'd',i       
-                 BREQ    affiche     
-                 CPA     'q',i       
-                 BREQ    fin         
-                 CPA     '1',i       
-                 BRLT    loop        
-                 CPA     '7',i       
-                 BRLE    ifNumber
+                start:    CHARO 'P', i
+                            BR mut1
+                mut1:     LDX 1, i
+                            LDA 69, i      ; Store "E" in A
+                            STA start, x   ; Change CHARO parameter
+                            LDX 4,i
+                            LDA mut2, i
+                            STA start, x   ; Change BR parameter
+                            BR start
                 ```
 				</section>
 
@@ -156,6 +155,7 @@
 				<section data-markdown>
                 ### Support de code mutant
 
+                * Problème : Quand peut-on faire confiance au source ?
                 * Objectif : Utiliser les informations du source autant que possible
                 * Comparaison de l'instruction du source avec l'instruction décodé en mémoire
                 * En cas de modification, on utilise le désassembleur
